@@ -1,10 +1,18 @@
 import matplotlib.pyplot as plt
 import keras
 import math
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+import datetime
+import iexfinance
+from iexfinance.stocks import get_historical_data
 
 
-start = datetime(2018, 12, 30)
-end = datetime(2014, 12, 30)
+
+start = datetime.date(2018, 12, 30)
+end = datetime.date(2014, 12, 30)
 df = get_historical_data("HMSY", end, start, output_format='pandas')
 #print (df)
 #df.plot()
@@ -61,8 +69,21 @@ trainingError = math.sqrt(mean_squared_error(trainingy[0], trainingGuess[:,0]))
 #print (trainingError)
 testingGuess = model.predict(testingx)
 testingGuess = scaler.inverse_transform(testingGuess)
-testingError = math.sqrt(mean_squared_error(testingy[0],testingGuess[:,0]))
-
+#testingError = math.sqrt(mean_squared_error(testingy[0],testingGuess[:,0]))
+trainPredictPlot = np.empty_like(averages)
+trainPredictPlot[:, :] = np.nan
+trainPredictPlot[25:len(trainingGuess)+25, :] = trainingGuess
+testPredictPlot = np.empty_like(averages)
+testPredictPlot[:, :] = np.nan
+testPredictPlot[len(trainingGuess)+(25*2)+1:len(averages)-1, :] = testingGuess
+plt.plot(scaler.inverse_transform(averages))
+plt.plot(trainPredictPlot)
+print('testPrices:')
+testPrices=scaler.inverse_transform(averages[len(testingy)+25:])
+print('testPredictions:')
+print(testingGuess)
+plt.plot(testPredictPlot)
+plt.show()
 
 
 
