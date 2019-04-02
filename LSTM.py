@@ -11,7 +11,8 @@ from iexfinance.stocks import get_historical_data
 
 
 
-start = datetime.date(2018, 12, 30)
+daysAhead=0
+start = datetime.date(2019, 3, 30)
 end = datetime.date(2014, 12, 30)
 df = get_historical_data("HMSY", end, start, output_format='pandas')
 #print (df)
@@ -20,7 +21,7 @@ df = get_historical_data("HMSY", end, start, output_format='pandas')
 #df.to_csv("dataFrame.csv")
 print (df)
 plt.figure(figsize = (21,10))
-plt.plot(range(df.shape[0]),(df['low']+df['high'])/2.0)
+#Splt.plot(range(df.shape[0]),(df['low']+df['high'])/2.0)
 #plt.show()
 highs = df['high'].tolist()
 lows = df['low'].tolist()
@@ -35,14 +36,14 @@ training = averages[:950]
 testing = averages[950:]
 trainingx = list()
 trainingy = list()
-for i in range(len(training)-26):
+for i in range(len(training)-26-daysAhead):
 	trainingx.append(training[i:(i+25),0])
-	trainingy.append(training[i+25,0])
+	trainingy.append(training[i+25+daysAhead,0])
 testingx = list()
 testingy = list()
-for i in range(len(testing)-26):
+for i in range(len(testing)-26-daysAhead):
 	testingx.append(testing[i:(i+25),0])
-	testingy.append(testing[i+25,0])
+	testingy.append(testing[i+25+daysAhead,0])
 trainingx = np.array(trainingx)
 trainingy = np.array(trainingy)
 testingx = np.array(testingx)
@@ -57,10 +58,15 @@ trainingx = np.reshape(trainingx, (trainingx.shape[0], 1, trainingx.shape[1]))
 testingx = np.reshape(testingx, (testingx.shape[0], 1, testingx.shape[1]))
 model = keras.models.Sequential()
 #print(trainingx[0])
-model.add(keras.layers.LSTM(15, input_shape=(1, 25)))
+model.add(keras.layers.LSTM(50, input_shape=(1, 25)))
 model.add(keras.layers.Dense(1))
 model.compile(loss='mse', optimizer='adam')
-model.fit(trainingx, trainingy, epochs=50, batch_size=50, verbose=1)
+history = model.fit(trainingx, trainingy, epochs=1000, batch_size=100, verbose=1)
+#plt.plot(history.history['loss'], label='train')
+#plt.legend()
+#plt.xlabel("Epochs")
+#plt.ylabel("Loss")
+#plt.show()
 trainingGuess = model.predict(trainingx)
 #What's going on here?
 trainingGuess = scaler.inverse_transform(trainingGuess)
@@ -72,18 +78,19 @@ testingGuess = scaler.inverse_transform(testingGuess)
 #testingError = math.sqrt(mean_squared_error(testingy[0],testingGuess[:,0]))
 trainPredictPlot = np.empty_like(averages)
 trainPredictPlot[:, :] = np.nan
-trainPredictPlot[25:len(trainingGuess)+25, :] = trainingGuess
+trainPredictPlot[25+daysAhead:len(trainingGuess)+25+daysAhead, :] = trainingGuess
 testPredictPlot = np.empty_like(averages)
 testPredictPlot[:, :] = np.nan
-testPredictPlot[len(trainingGuess)+(25*2)+1:len(averages)-1, :] = testingGuess
+testPredictPlot[len(trainingGuess)+(25*2)+1+(2*daysAhead):len(averages)-1, :] = testingGuess
 plt.plot(scaler.inverse_transform(averages))
 plt.plot(trainPredictPlot)
 print('testPrices:')
 testPrices=scaler.inverse_transform(averages[len(testingy)+25:])
 print('testPredictions:')
 print(testingGuess)
+plt.xlabel("Time")
+plt.ylabel("Stock Price")
 plt.plot(testPredictPlot)
 plt.show()
-
 
 
